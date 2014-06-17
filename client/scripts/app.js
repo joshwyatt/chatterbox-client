@@ -166,6 +166,14 @@ app.addFriend = function(username) {
   if (!this.friends[username]) {
     this.friends[username] = true;
     console.log('added a friend: ' + username);
+    for (var i = 0; i < app.messages.length; i++) {
+      var message = app.messages[i];
+      if (this.friends.hasOwnProperty(username)) {
+        message['$el'].css('font-weight', 'Bold');
+      } else {
+        message['$el'].css('font-weight', 'normal');
+      }
+    }
   }
 };
 
