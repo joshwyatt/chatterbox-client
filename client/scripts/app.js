@@ -108,7 +108,15 @@ app.addRoom = function(roomname) {
     var t = _.template('<li><%= roomname %></li>');
     $roomSelect.append(t({roomname: roomname}));
     this.roomnames[roomname] = true;
+    var app = this;
+    $roomSelect.find('li').last().on('click', function(e) {
+      app._filterByRoom($(this).text());
+    });
   }
+};
+
+app._filterByRoom = function(roomname) {
+  console.dir(roomname);
 };
 
 app.addUser = function(username) {
