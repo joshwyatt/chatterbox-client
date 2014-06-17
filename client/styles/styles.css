@@ -6,7 +6,7 @@ body {
 }
 
 #main {
-    width: 500px;
+    width: 1000px;
     margin: auto;
     text-align: left;
     background: white;
@@ -81,4 +81,9 @@ form input[type=text] {
 
 .spinner img {
     padding: 10px;
+}
+div.chats {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid gray;
 }

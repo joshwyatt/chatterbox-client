@@ -109,7 +109,7 @@ app.addMessage = function(message) {
 
   //add message to html
   var $chats = $('#chats');
-  var t = _.template('<div><p><%= message.username %></p><p><%= message.text %></p></div>');
+  var t = _.template('<div class="chats"><span><%= message.username %>: </span><span><%= message.text %></span></div>');
   message['$el'] = $(t({message: message}));
   $chats.prepend(message['$el']);
   if (app.currentRoomname === undefined || message.roomname === app.currentRoomname) {
