@@ -3,7 +3,8 @@ var app = {
   server: 'https://api.parse.com/1/classes/chatterbox',
   roomnames: {},
   usernames: {},
-  friends: {}
+  friends: {},
+  data: {}
 };
 
 app.init = function() {
@@ -18,15 +19,10 @@ app.init = function() {
   }
   this.username = getObject.username;
   this.roomname = getObject.roomname;
-
-  $('input.submit').on('submit', function(e) {
-    e.preventDefault();
-    this.handleSubmit();
-  });
 };
+
 app.send = function(message) {
   $.ajax({
-    // always use this url
     url: this.server,
     type: 'POST',
     data: JSON.stringify(message),
@@ -35,25 +31,7 @@ app.send = function(message) {
       console.log('chatterbox: Message sent');
     },
     error: function (data) {
-      // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
       console.error('chatterbox: Failed to send message');
-    }
-  });
-};
-app.fetch = function() {
-  $.ajax({
-    url: this.server,
-    type: 'GET',
-    contentType: 'application/json',
-    dataType: 'JSON',
-    success: function (message) {
-      console.dir(message);
-      console.log('got it');
-      this._sanitizeMessage(message);
-      this.addMessage(message);
-    },
-    error: function(data) {
-      console.log('err');
     }
   });
 };
@@ -63,11 +41,60 @@ app.clearMessages = function () {
   $('#chats').empty();
 };
 
+app._parseMessages = function(data) {
+  app.data = data;
+  messages = data.results;
+  $('#chats').empty();
+  for (var i = 0; i < messages.length; i++) {
+    var message = messages[i];
+    app.addMessage(message);
+  }
+};
+
+app.fetch = function() {
+  $.ajax({
+    url: this.server,
+    type: 'GET',
+    contentType: 'application/json',
+    dataType: 'JSON',
+    data: {
+      order: '-createdAt'
+    },
+    success: this._parseMessages,
+    error: function(data) {
+      console.log('err');
+    }
+  });
+};
+
+
 app._sanitizeMessage = function(message) {
-  //we're safe!!!!
+  message.username = this._sanitizeString(message.username);
+  message.roomname = this._sanitizeString(message.roomname);
+  message.text = this._sanitizeString(message.text);
+
+
+};
+
+app._sanitizeString = function(s) {
+  if (typeof s === 'string') {
+    s = s.replace(/&/g, '&amp');
+    s = s.replace(/</g, '&lt');
+    s = s.replace(/>/g, '&gt');
+    s = s.replace(/"/g, '&quot');
+    s = s.replace(/'/g, '&#x27');
+    s = s.replace(/\//g, '&#x2F');
+  } else {
+    s = 'undefined';
+  }
+  return s;
 };
 
 app.addMessage = function(message) {
+  //sanitize message
+  this._sanitizeMessage(message);
+
+  //add message to html
   var $chats = $('#chats');
   var t = _.template('<div><p><%= message.username %></p><p><%= message.text %></p></div>');
   $chats.append(t({message: message}));
@@ -106,16 +133,21 @@ app.addFriend = function(username) {
 };
 
 app.handleSubmit = function() {
-  var $text = $('#message').val();
+  var $text = $('#message');
   var message = {
     username: this.username,
-    text: text,
+    text: $text.val(),
     roomname: this.roomname
   };
   this.send(message);
-  $text.empty();
+  $text.val('');
 };
 
 $(document).ready(function() {
   app.init();
+  $('#send .submit').on('submit', function(e) {
+    e.preventDefault();
+    app.handleSubmit();
+  });
+  app.intervalID = setInterval(app.fetch.bind(app), 1000);
 });
