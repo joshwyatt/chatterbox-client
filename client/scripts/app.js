@@ -4,7 +4,9 @@ var app = {
   roomnames: {},
   usernames: {},
   friends: {},
-  data: {}
+  lastObjKey: '',
+  messages: [],
+  currentRoomname: undefined
 };
 
 app.init = function() {
@@ -42,13 +44,26 @@ app.clearMessages = function () {
 };
 
 app._parseMessages = function(data) {
-  app.data = data;
-  messages = data.results;
-  $('#chats').empty();
-  for (var i = 0; i < messages.length; i++) {
-    var message = messages[i];
+  var incomingMessages = data.results;
+  var stringifiedMessage;
+  var i = -1;
+  for (i = 0; i < incomingMessages.length; i++) {
+    var message = incomingMessages[i];
+    stringifiedMessage =JSON.stringify(message);
+    if (app.lastObjKey === stringifiedMessage) {
+      break;
+    }
+  }
+  for (var j = i - 1; j >= 0; j--){
+    var message = incomingMessages[j];
+    if (j === 0) {
+      stringifiedMessage =JSON.stringify(message);
+    }
+    app.messages.push(message);
     app.addMessage(message);
   }
+  window.troubleObject = message;
+  app.lastObjKey = stringifiedMessage;
 };
 
 app.fetch = function() {
@@ -72,8 +87,6 @@ app._sanitizeMessage = function(message) {
   message.username = this._sanitizeString(message.username);
   message.roomname = this._sanitizeString(message.roomname);
   message.text = this._sanitizeString(message.text);
-
-
 };
 
 app._sanitizeString = function(s) {
@@ -97,7 +110,13 @@ app.addMessage = function(message) {
   //add message to html
   var $chats = $('#chats');
   var t = _.template('<div><p><%= message.username %></p><p><%= message.text %></p></div>');
-  $chats.append(t({message: message}));
+  message['$el'] = $(t({message: message}));
+  $chats.prepend(message['$el']);
+  if (app.currentRoomname === undefined || message.roomname === app.currentRoomname) {
+    message['$el'].show();
+  } else {
+    message['$el'].hide();
+  }
   this.addRoom(message.roomname);
   this.addUser(message.username);
 };
@@ -117,6 +136,16 @@ app.addRoom = function(roomname) {
 
 app._filterByRoom = function(roomname) {
   console.dir(roomname);
+  app.currentRoomname = roomname;
+  for (var i = 0; i < app.messages.length; i++) {
+    var message = app.messages[i];
+    if (message.roomname === roomname) {
+      message['$el'].show();
+    } else {
+      message['$el'].hide();
+    }
+    $('.roomname').text(app.currentRoomname);
+  }
 };
 
 app.addUser = function(username) {
@@ -145,7 +174,7 @@ app.handleSubmit = function() {
   var message = {
     username: this.username,
     text: $text.val(),
-    roomname: this.roomname
+    roomname: app.currentRoomname
   };
   this.send(message);
   $text.val('');
